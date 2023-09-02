@@ -42,4 +42,4 @@ as outras dependências ja estão inclusas nativamente no python.
 
 4 - Tela do Jogo
 
-<img src="/assets/information_user.jpeg">
+<img src="/assets/game.jpeg">
