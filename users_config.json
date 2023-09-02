@@ -1,10 +1,6 @@
 {
-    "teste1": {
-        "totalScores": 10,
-        "roundsPlayed": 3
-    },
-    "teste2": {
-        "totalScores": 9,
-        "roundsPlayed": 4
+    "teste": {
+        "totalScores": 1,
+        "roundsPlayed": 0
     }
 }
