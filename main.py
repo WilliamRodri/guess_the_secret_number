@@ -2,9 +2,18 @@ import PySimpleGUI as sg
 import random
 import pygame
 import json
+import os
 
 
 def main():
+
+    if os.path.exists("./users_config.json"):
+        pass
+    else:
+        fileName = "users_config.json"
+        with open(fileName, "w") as file:
+            json.dump({}, file)
+
     def ler_dados():
         with open("./users_config.json", "r") as index:
             dadosUsers = json.load(index)
@@ -44,6 +53,7 @@ def main():
             [sg.Text("" * 10)],
             [sg.Button("Criar", key='createPlay'), sg.Button(button_text="Fechar", key="close")],
             [sg.Text("" * 10)],
+            [sg.Text("", key='message', text_color='red')],
         ]
 
         createNewUser = sg.Window("Criando novo jogador!", create_user_main)
@@ -55,28 +65,32 @@ def main():
                 break
 
             newUserName = valueCreateNewUser['newUserName']
-            if eventCreateNewUser == "createPlay":
-                dados = ler_dados()
+            if newUserName != "":
+                if eventCreateNewUser == "createPlay":
+                    dados = ler_dados()
 
-                if newUserName in dados:
-                    sg.popup("Jogador com o mesmo nome ja existente")
-                    continue
-                else:
-                    dictionary = {
-                        newUserName: {
-                            "totalScores": 1,
-                            "roundsPlayed": 0
+                    if newUserName in dados:
+                        sg.popup("Jogador com o mesmo nome ja existente")
+                        continue
+                    else:
+                        dictionary = {
+                            newUserName: {
+                                "totalScores": 0,
+                                "roundsPlayed": 0
+                            }
                         }
-                    }
 
-                    dados.update(dictionary)
-                    with open("./users_config.json", "w") as index:
-                        json.dump(dados, index, indent=4)
+                        dados.update(dictionary)
+                        with open("./users_config.json", "w") as index:
+                            json.dump(dados, index, indent=4)
 
-                    sg.popup("Jogador criado com Sucesso!")
-                    opcoesUserListCreateNewuser = update_combo_with_data()
-                    winStart['comboUsers'].update(values=opcoesUserListCreateNewuser)
-                break
+                        sg.popup("Jogador criado com Sucesso!")
+                        opcoesUserListCreateNewuser = update_combo_with_data()
+                        winStart['comboUsers'].update(values=opcoesUserListCreateNewuser)
+                    break
+            else:
+                createNewUser['message'].update("Você precisa digitar algo!")
+
         createNewUser.close()
 
     dados = ler_dados()
@@ -119,11 +133,11 @@ def main():
             ]
 
             two_column = [
-                [sg.Text("Pontuação", font=("Roboto", 13))],
+                [sg.Text("Pontuações", font=("Roboto", 13))],
                 [sg.Text(score, font=("Roboto", 17), key='score')],
-                [sg.Text("Rodada", font=("Roboto", 13))],
+                [sg.Text("Rodadas", font=("Roboto", 13))],
                 [sg.Text(f"{game_rounds} / {total_rounds}", font=("Roboto", 17), key='round')],
-                [sg.Text("Tentivas", font=("Roboto", 13))],
+                [sg.Text("Tentativas", font=("Roboto", 13))],
                 [sg.Text(attempts, font=("Roboto", 17), key='attempts')],
             ]
 
@@ -147,12 +161,12 @@ def main():
 
         start = [
             [sg.Text(' ' * 10)],
-            [sg.Text("Escolha um jogador", )],
-            [sg.Combo(opcoesUserList, key="comboUsers", readonly=True), sg.Button("Informações", key='informationPlayer')],
+            [sg.Text("Escolha um jogador")],
+            [sg.Combo(opcoesUserList, size=(10, 0), key="comboUsers", readonly=True), sg.Button("Informações", key='informationPlayer')],
             [sg.Text(' ' * 10)],
             [sg.Text("Quantas as vezes você deseja jogar?", )],
             [sg.Text(' ' * 10)],
-            [sg.Input(size=(10, 1), key='times_play'), sg.Button(button_text='Continuar', key='continue')],
+            [sg.Checkbox("Anonimo?", key="anonimo_check") ,sg.Input(size=(10, 1), key='times_play'), sg.Button(button_text='Continuar', key='continue')],
             [sg.Text(' ' * 10)],
             [sg.Text("", key='message', text_color='red')],
             [sg.Button("Deseja criar um Jogador?", key='createNewUser'), sg.Button("Atualizar Dados", key='refresh')]
@@ -190,6 +204,7 @@ def main():
                     return False
 
         def informationPlayer(player):
+            global information_main
             try:
                 dados = ler_dados()[player]
 
@@ -229,12 +244,21 @@ def main():
 
         def logic(playerSelected, win, times_plays):
 
-            dadosPlayerSelected = ler_dados()[playerSelected]
-
             win.close()
-            score = dadosPlayerSelected['totalScores']
+            if playerSelected == "Anonimo":
+                dadosPlayerSelected = ler_dados()[playerSelected]
+                score = dadosPlayerSelected['totalScores']
+            else:
+                dadosPlayerSelected = {
+                    "totalScores": 0,
+                    "roundsPlayed": 0
+                }
+                score = 0
 
             for game_rounds in range(1, times_plays + 1):
+
+                if score < 0:
+                    score = 0
 
                 numberSecret = random.randint(1, 10)
                 print(f"Numero secreto: {numberSecret}")
@@ -321,20 +345,34 @@ def main():
                 continue
 
             if event == 'continue':
-                if playerSelected != '':
+                #anonimo_check
+                if value["anonimo_check"] == True:
                     try:
                         times_play = value['times_play']
                         times_play = int(times_play)
                         if times_play <= 0:
                             winStart['message'].update("Digite valores maiores que '0'")
                         else:
-                            logic = logic(playerSelected, winStart, times_play)
+                            logic = logic("Anônimo", winStart, times_play)
                             if logic:
                                 final()
                     except ValueError:
                         winStart['message'].update("Digite um valor Válido! ex. (1, 2 ou 3)")
                 else:
-                    winStart['message'].update("Selecione um Jogador ou crie um!")
+                    if playerSelected != '':
+                        try:
+                            times_play = value['times_play']
+                            times_play = int(times_play)
+                            if times_play <= 0:
+                                winStart['message'].update("Digite valores maiores que '0'")
+                            else:
+                                logic = logic(playerSelected, winStart, times_play)
+                                if logic:
+                                    final()
+                        except ValueError:
+                            winStart['message'].update("Digite um valor Válido! ex. (1, 2 ou 3)")
+                    else:
+                        winStart['message'].update("Selecione um Jogador ou crie um!")
 
         winStart.close()
 
